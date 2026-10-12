@@ -1,0 +1,41 @@
+internal/service/application_envs_fork_test.go
+  s_f18e3d64153da3::t_bdf4e16ae97827 1-101
+.github/workflows/release.yml
+  s_f18e3d64153da3::t_0ffe0fd606d438 27-29
+.goreleaser.yml
+  s_f18e3d64153da3::t_ba047e5bccb0ea 15
+  s_f18e3d64153da3::t_b2fcd0ae56b247 35,38-40,45
+README.md
+  s_f18e3d64153da3::t_f177070b42b118 1-6,10-15
+  s_f18e3d64153da3::t_e21c0e017ec652 7-9
+internal/service/attributes.go
+  s_f18e3d64153da3::t_5733d7fe51c464 46-67
+docs/resources/application_envs.md
+  s_f18e3d64153da3::t_03e8a41f123fa7 67
+  s_f18e3d64153da3::t_44d79e3d615304 56
+internal/service/application_envs_resource.go
+  s_f18e3d64153da3::t_0cd685bb38be1b 7
+  s_f18e3d64153da3::t_ef51ff07ef037e 218
+  s_f18e3d64153da3::t_fa12c4af258b31 85-86
+  s_f18e3d64153da3::t_4bd8be7451c794 87-91
+  s_f18e3d64153da3::t_212e6e698457e2 291-314
+  s_f18e3d64153da3::t_aca46568775911 112
+  s_f18e3d64153da3::t_985b80feba3f24 275-290
+  s_f18e3d64153da3::t_b8a595e9fc2172 396
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d19de62d198b80144b279a74f1508dfa94e51b97",
+  "prompts": {},
+  "sessions": {
+    "s_f18e3d64153da3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "35d9060a-6180-4c1e-89f7-15f92f2da94c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "VaultTec-Dev <vaulttec-dev@proton.me>"
+    }
+  }
+}
