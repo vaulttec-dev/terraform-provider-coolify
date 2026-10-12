@@ -43,6 +43,28 @@ func makeResourceAttributeRequired(
 	return nil
 }
 
+func makeResourceAttributeReadOnly(
+	attributes map[string]resource_schema.Attribute,
+	attrName string,
+) error {
+	attr, ok := attributes[attrName]
+	if !ok {
+		return fmt.Errorf("attribute %s not found", attrName)
+	}
+
+	switch typedAttr := attr.(type) {
+	case resource_schema.BoolAttribute:
+		typedAttr.Required = false
+		typedAttr.Optional = false
+		typedAttr.Computed = true
+		attributes[attrName] = typedAttr
+	default:
+		return fmt.Errorf("unsupported attribute type for %s", attrName)
+	}
+
+	return nil
+}
+
 func makeResourceAttributeSensitive(
 	attributes map[string]resource_schema.Attribute,
 	attrName string,

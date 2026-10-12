@@ -1,3 +1,18 @@
+> **Fork of [SierraJC/terraform-provider-coolify](https://github.com/SierraJC/terraform-provider-coolify).**
+> Changes in `coolify_application_envs`:
+>
+> - `env.value` is sensitive, so plans and CI logs no longer print secrets.
+> - Imported envs are ordered by `(is_preview, key)` instead of creation order, so a
+>   configuration that imports on every run (no stored state) plans no changes.
+> - `env.is_build_time` is read-only and never sent: Coolify 4.4 rejects it on writes
+>   (422), and an unset flag used to go out as `false`. `coolify_service_envs` still
+>   sends it.
+>
+> Not published to a registry and releases are unsigned. Install a release zip into a
+> [filesystem mirror](https://opentofu.org/docs/cli/config/config-file/) under
+> `registry.opentofu.org/vaulttec-dev/coolify/<version>/<os>_<arch>/` and use
+> `source = "vaulttec-dev/coolify"`; the `h1:` hash in `.terraform.lock.hcl` pins it.
+
 <p align="center">
   <a href="https://github.com/SierraJC/terraform-provider-coolify/blob/main/LICENSE" alt="License">
     <img src="https://img.shields.io/github/license/SierraJC/terraform-provider-coolify" /></a>

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -81,6 +82,13 @@ func (r *applicationEnvsResource) Schema(ctx context.Context, req resource.Schem
 
 	makeResourceAttributeRequired(codegenSchema.Attributes, "key")
 	makeResourceAttributeRequired(codegenSchema.Attributes, "value")
+	// Values are secrets more often than not; without this every plan prints them.
+	makeResourceAttributeSensitive(codegenSchema.Attributes, "value")
+	// Coolify 4.4 rejects is_build_time on writes (422 "This field is not
+	// allowed") and reports build-time use as is_buildtime instead, so the flag
+	// can be neither set nor read. Read-only makes a config that sets it fail
+	// validation instead of the API call.
+	makeResourceAttributeReadOnly(codegenSchema.Attributes, "is_build_time")
 }
 
 func (r *applicationEnvsResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -101,13 +109,7 @@ func (r *applicationEnvsResource) Create(ctx context.Context, req resource.Creat
 
 	uuid := plan.Uuid.ValueString()
 	for i, env := range plan.Env {
-		createResp, err := r.client.CreateEnvByApplicationUuidWithResponse(ctx, uuid, api.CreateEnvByApplicationUuidJSONRequestBody{
-			IsBuildTime: env.IsBuildTime.ValueBoolPointer(),
-			IsLiteral:   env.IsLiteral.ValueBoolPointer(),
-			IsPreview:   env.IsPreview.ValueBoolPointer(),
-			Key:         env.Key.ValueStringPointer(),
-			Value:       env.Value.ValueStringPointer(),
-		})
+		createResp, err := r.client.CreateEnvByApplicationUuidWithResponse(ctx, uuid, createEnvBody(env))
 
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -213,15 +215,7 @@ func (r *applicationEnvsResource) Update(ctx context.Context, req resource.Updat
 
 	var bulkUpdateEnvs = []updateEnvsByApplicationUuidJSONRequestBodyItem{}
 	for _, env := range plan.Env {
-		bulkUpdateEnvs = append(bulkUpdateEnvs, updateEnvsByApplicationUuidJSONRequestBodyItem{
-			IsBuildTime: env.IsBuildTime.ValueBoolPointer(),
-			IsLiteral:   env.IsLiteral.ValueBoolPointer(),
-			IsPreview:   env.IsPreview.ValueBoolPointer(),
-			Key:         env.Key.ValueStringPointer(),
-			Value:       env.Value.ValueStringPointer(),
-			IsMultiline: env.IsMultiline.ValueBoolPointer(),
-			IsShownOnce: env.IsShownOnce.ValueBoolPointer(),
-		})
+		bulkUpdateEnvs = append(bulkUpdateEnvs, bulkEnvItem(env))
 	}
 
 	if len(bulkUpdateEnvs) > 0 {
@@ -277,6 +271,46 @@ func (r *applicationEnvsResource) ImportState(ctx context.Context, req resource.
 }
 
 // MARK: Helper Functions
+
+// sortEnvs orders envs the way a configuration naturally lists them: regular
+// variables first, then preview ones, each by key. `env` is a list, so its diff
+// is positional, and the API returns envs in creation order. Without this, an
+// import (empty prior state, so nothing to align with) shows changes that are
+// only reordering — on every plan, for a configuration that is never applied
+// from a stored state.
+func sortEnvs(envs []resource_application_envs.ApplicationEnvsModel) {
+	sort.SliceStable(envs, func(i, j int) bool {
+		a, b := envs[i], envs[j]
+		if a.IsPreview.ValueBool() != b.IsPreview.ValueBool() {
+			return !a.IsPreview.ValueBool()
+		}
+		return a.Key.ValueString() < b.Key.ValueString()
+	})
+}
+
+// The write bodies never carry is_build_time: Coolify 4.4 answers 422 to it,
+// false included, and an unset flag would still go out as false, because
+// ValueBoolPointer turns an unknown value into a pointer to false.
+
+func createEnvBody(env resource_application_envs.ApplicationEnvsModel) api.CreateEnvByApplicationUuidJSONRequestBody {
+	return api.CreateEnvByApplicationUuidJSONRequestBody{
+		IsLiteral: env.IsLiteral.ValueBoolPointer(),
+		IsPreview: env.IsPreview.ValueBoolPointer(),
+		Key:       env.Key.ValueStringPointer(),
+		Value:     env.Value.ValueStringPointer(),
+	}
+}
+
+func bulkEnvItem(env resource_application_envs.ApplicationEnvsModel) updateEnvsByApplicationUuidJSONRequestBodyItem {
+	return updateEnvsByApplicationUuidJSONRequestBodyItem{
+		IsLiteral:   env.IsLiteral.ValueBoolPointer(),
+		IsPreview:   env.IsPreview.ValueBoolPointer(),
+		Key:         env.Key.ValueStringPointer(),
+		Value:       env.Value.ValueStringPointer(),
+		IsMultiline: env.IsMultiline.ValueBoolPointer(),
+		IsShownOnce: env.IsShownOnce.ValueBoolPointer(),
+	}
+}
 
 func (r *applicationEnvsResource) filterRelevantEnvs(
 	stateEnvs []resource_application_envs.ApplicationEnvsModel,
@@ -359,6 +393,7 @@ func (r *applicationEnvsResource) apiToModel(
 			Value:       flatten.String(env.Value),
 		}
 	}
+	sortEnvs(envs)
 
 	return applicationEnvsResourceModel{
 		Uuid: types.StringUnknown(),

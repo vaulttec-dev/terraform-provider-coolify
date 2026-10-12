@@ -53,11 +53,10 @@ resource "coolify_application_envs" "example" {
 Required:
 
 - `key` (String) The key of the environment variable.
-- `value` (String) The value of the environment variable.
+- `value` (String, Sensitive) The value of the environment variable.
 
 Optional:
 
-- `is_build_time` (Boolean) The flag to indicate if the environment variable is used in build time.
 - `is_literal` (Boolean) The flag to indicate if the environment variable is a literal, nothing espaced.
 - `is_multiline` (Boolean) The flag to indicate if the environment variable is multiline.
 - `is_preview` (Boolean) The flag to indicate if the environment variable is used in preview deployments.
@@ -65,6 +64,7 @@ Optional:
 
 Read-Only:
 
+- `is_build_time` (Boolean) The flag to indicate if the environment variable is used in build time.
 - `uuid` (String) UUID of the application.
 
 ## Import
